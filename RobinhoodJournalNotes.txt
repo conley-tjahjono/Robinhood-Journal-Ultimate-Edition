@@ -1,0 +1,24 @@
+CDIV: Cash Dividend
+INT: Interest Payment
+Buy: Buying Shares
+STO: Sell to Open
+STC: Sell to Close
+OEXP: Options Expired
+OASGN: Options Assigned
+Sell: Sell Shares
+BTO: Buy to Open
+BTC: Buy to Close
+SLIP: Stock Lending 
+ACH: Transfers Deposit and Withdrawl
+SPL: Stock Split
+AFEE: Fees (ADR)
+OEXCS: Option Exercised
+MISC: Very Random (Price Correction Credits)
+OCA: Option Transfer (Option Transfer after SPAC Merger)
+SXCH: Share Transfer (Share Transfer after SPAC Merger)
+CIL: Cash in Lieu (Refer to IVR)
+SDIV: Share Dividend
+ROC: Return of Capital
+GOLD: Robinhood Gold
+REC: Free Stock Referral
+DTAX: Foreign Tax Witholding
