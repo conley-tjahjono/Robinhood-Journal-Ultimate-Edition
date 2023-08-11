@@ -9,8 +9,8 @@ file_path = 'robinhood.csv'
 extracted_columns = ['Activity Date', 'Instrument',
                      'Description', 'Trans Code', 'Quantity', 'Price', 'Amount']
 
-# Extract the data
-all_data = pd.read_csv(file_path, usecols=extracted_columns)
+# Extract the data in ascending order
+all_data = pd.read_csv(file_path, usecols=extracted_columns)[::-1]
 
 # Filter the data into their own data frames based on filter criteria
 options_data = all_data[all_data['Trans Code'].isin(
@@ -28,7 +28,7 @@ misc_data = all_data[all_data['Trans Code'].isin(['MISC', 'ROC', 'DTAX'])]
 
 
 def get_completed_option_orders(symbol=None):
-    # 'OEXP', 'OASGN', 'OEXCS', 'OCA'
+    # 'OEXP', 'OASGN', 'OEXCS', 'OCA' on hold
     open_orders = options_data[options_data['Trans Code'].isin([
         'STO', 'BTO'])]
     close_orders = options_data[options_data['Trans Code'].isin([
@@ -37,7 +37,8 @@ def get_completed_option_orders(symbol=None):
     if symbol:
         open_orders = open_orders.query('Instrument == @symbol')
         close_orders = close_orders.query('Instrument == @symbol')
-    print(open_orders)
+
+    print(open_orders.head())
 
 
 get_completed_option_orders('SOFI')
