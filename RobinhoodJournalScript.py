@@ -3,6 +3,7 @@ import datetime as dt
 import pandas as pd
 from IPython.display import display
 import pprint
+import math
 
 # Extract the CSV file
 file_path = 'robinhood.csv'
@@ -11,7 +12,7 @@ extracted_columns = ['Activity Date', 'Instrument',
                      'Description', 'Trans Code', 'Quantity', 'Price', 'Amount']
 
 # Extract the data in ascending order
-all_data = pd.read_csv(file_path, usecols=extracted_columns)[::-1]
+all_data = pd.read_csv(file_path, usecols=extracted_columns)[::-1].fillna("0")
 
 # Filter the data into their own data frames based on filter criteria
 options_data = all_data[all_data['Trans Code'].isin(
@@ -29,7 +30,6 @@ misc_data = all_data[all_data['Trans Code'].isin(['MISC', 'ROC', 'DTAX'])]
 
 
 def get_completed_option_orders_by_symbol(symbol=None):
-
     column_names = [
         'STATUS',
         'OPEN DATE',
@@ -54,7 +54,7 @@ def get_completed_option_orders_by_symbol(symbol=None):
     open_orders = options_data[options_data['Trans Code'].isin([
         'STO', 'BTO'])].query('Instrument == @symbol').to_dict('records')
     close_orders = options_data[options_data['Trans Code'].isin([
-        'STC', 'BTC'])].query('Instrument == @symbol').to_dict('records')
+        'STC', 'BTC', 'OEXP', 'OASGN', 'OEXCS'])].query('Instrument == @symbol').to_dict('records')
 
     # Creating a Dictionary: open_orders_dict
     # key = Option Description
@@ -70,9 +70,12 @@ def get_completed_option_orders_by_symbol(symbol=None):
     # pprint.pprint(open_orders_dict)
     while len(close_orders) > 0:
         close_order = close_orders.pop()
+        key = close_order['Description']
+        if close_order['Trans Code'] == 'OEXP':
+            key = key.replace('Option Expiration for ', "")
 
         # .pop() grabs the last element (Oldest older by date)
-        open_order = open_orders_dict[close_order['Description']].pop()
+        open_order = open_orders_dict[key].pop()
         close_amount = float(close_order['Quantity'])
         open_amount = float(open_order['Quantity'])
 
@@ -91,10 +94,11 @@ def get_completed_option_orders_by_symbol(symbol=None):
         # if the closer_order is the same as the open_order
         else:
             size = open_amount
-
+        print(close_order)
         # average price of the open order contract
         open_average_price = float(open_order['Price'].replace('$', ''))
         # average price of the close order contract
+        print(close_order['Price'])
         close_average_price = float(close_order['Price'].replace('$', ''))
 
         # if the open order is a buy order
@@ -111,8 +115,11 @@ def get_completed_option_orders_by_symbol(symbol=None):
             # calculate the $ return and % return
             returnAmount = round(
                 (open_average_price - close_average_price)*100*size, 2)
-            returnPercentge = round(
-                ((open_average_price / close_average_price) - 1) * 100, 2)
+            if close_average_price == 0:
+                returnPercentge = 100
+            else:
+                returnPercentge = round(
+                    ((open_average_price / close_average_price) - 1) * 100, 2)
 
         # completed option trade was a win or loss based on return amount
         status = 'LOSS' if returnAmount < 0 else 'WIN'
@@ -141,4 +148,4 @@ def get_completed_option_orders_by_symbol(symbol=None):
     pprint.pprint(df[display_column_names])
 
 
-get_completed_option_orders_by_symbol('NIO')
+get_completed_option_orders_by_symbol('SOFI')
