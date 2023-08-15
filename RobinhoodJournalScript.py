@@ -148,4 +148,22 @@ def get_completed_option_orders_by_symbol(symbol=None):
     pprint.pprint(df[display_column_names])
 
 
+def get_completed_stock_trades_by_symbol(symbol):
+    # 'Buy', 'Sell',
+    # 'SPL'
+    # 'AFEE'
+    # 'SXCH' Share Exchange Merger
+    # 'REC' Free Shares
+    # 'CIL'
+    # list of dictionaries
+    open_orders = options_data[options_data['Trans Code'].isin([
+        'Buy', 'BTO'])].query('Instrument == @symbol').to_dict('records')
+    close_orders = options_data[options_data['Trans Code'].isin([
+        'STC', 'BTC', 'OEXP', 'OASGN', 'OEXCS'])].query('Instrument == @symbol').to_dict('records')
+
+def get_SXCH_symbols:
+    # 'SXCH'
+
+
+
 get_completed_option_orders_by_symbol('SOFI')
