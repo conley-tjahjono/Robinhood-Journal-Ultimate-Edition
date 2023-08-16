@@ -113,3 +113,118 @@ def holding_amount_by_days(openDate, closeDate):
     close_date = dt.date(close_y, close_m, close_d)
 
     return (close_date - open_date).days
+
+# Completing Stock Orders
+def completed_stock_orders(fileName):
+    file_path = r.export.create_absolute_csv('.', fileName, 'stock')
+    all_orders = r.export.get_all_stock_orders()
+    with open(file_path, 'w', newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow([
+            'symbol',
+            'instrument',
+            'instrument_id',
+            'date',
+            'time',
+            'order_type',
+            'side',
+            'fees',
+            'quantity',
+            'average_price',
+            'total_price'
+        ])
+        # getting the stock splits
+        stock_splits = get_stock_splits()
+        list_of_stock_splits = []
+        for split in stock_splits:
+            list_of_stock_splits.append(split['old_symbol'])
+
+        for order in all_orders:
+            if 'filled' in order['state'] and order['cancel'] is None:
+                date_and_time = order['last_transaction_at'].split('T')
+
+                if r.stocks.get_symbol_by_url(order['instrument']) in list_of_stock_splits and dt.datetime.strptime(date_and_time[0], "%Y-%m-%d") < dt.datetime.strptime(split['effective_date'], "%Y-%m-%d"):
+                    price_amount = float(
+                        order['cumulative_quantity']) * float(order['average_price'])
+                    csv_writer.writerow([
+                        r.stocks.get_symbol_by_url(order['instrument']),
+                        order.get('instrument'),
+                        order.get('instrument_id'),
+                        date_and_time[0],
+                        date_and_time[1],
+                        order['type'],
+                        order['side'],
+                        order['fees'],
+                        str(float(order['cumulative_quantity']) *
+                            float(split['multiplier']) / float(split['divisor'])),
+                        str(float(
+                            order['average_price']) * float(split['divisor']) / float(split['multiplier'])),
+                        str(float(order['cumulative_quantity']) *
+                            float(order['average_price']) - float(order['fees']))
+                    ])
+                else:
+                    price_amount = float(
+                        order['cumulative_quantity']) * float(order['average_price'])
+                    csv_writer.writerow([
+                        r.stocks.get_symbol_by_url(order['instrument']),
+                        order.get('instrument'),
+                        order.get('instrument_id'),
+                        date_and_time[0],
+                        date_and_time[1],
+                        order['type'],
+                        order['side'],
+                        order['fees'],
+                        order['cumulative_quantity'],
+                        order['average_price'],
+                        str(float(order['cumulative_quantity']) *
+                            float(order['average_price']) - float(order['fees']))
+                    ])
+        f.close()
+
+# grabs assignment or exercised options
+def list_option_events():
+    url = 'https://api.robinhood.com/options/events/'
+    option_events_request = r.request_get(url, 'pagination')
+
+    # dict_keys(['account', 'cash_component', 'chain_id', 'created_at', 'direction', 'equity_components',
+    # 'event_date', 'id', 'option', 'position', 'quantity', 'source_ref_id', 'state', 'total_cash_amount',
+    # 'type', 'underlying_price', 'updated_at'])
+    # for the key: type, there are two types: expiration or assignment
+    # for equity_components: dict_keys(['id', 'instrument', 'price', 'quantity', 'side', 'symbol'])
+
+    df_option_events = pd.DataFrame(option_events_request)
+    df_option_events = df_option_events.loc[df_option_events['type'].isin(
+        ['assignment', 'exercise'])]
+    option_events_request = df_option_events.to_dict('records')
+
+    option_events = []
+    for option_event in option_events_request:
+        # equity_components
+        #   instrument
+        #   price
+        #   quantity
+        #   side
+        #   symbol
+        # event_date
+        # total_cash_amount
+        # fee is price * quantity - total cash amount
+        event_date = option_event.get('event_date')
+        total_cash_amount = option_event.get('total_cash_amount')
+        equity_components = option_event.get('equity_components')
+        round_num = 6
+        for component in equity_components:
+            event = {
+                'symbol': component.get('symbol'),
+                'instrument': component.get('instrument'),
+                'instrument_id': component.get('instrument').replace('https://api.robinhood.com/instruments/', '').replace('/', ''),
+                'date': event_date,
+                'time': '16:00:00.000000Z',
+                'order_type': 'option event',
+                'side': component.get('side'),
+                'fees': str(round(float(component.get('price')) * float(component.get('quantity')) - float(total_cash_amount), round_num)),
+                'quantity': component.get('quantity'),
+                'average_price': component.get('price'),
+                'total_price': total_cash_amount,
+            }
+            option_events.append(event)
+    return option_events
