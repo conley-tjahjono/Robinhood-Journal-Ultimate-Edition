@@ -1,1 +1,4 @@
 shared/myLogin.py
+myStocks.csv
+shared/__pycache__/myLoginAlt.cpython-39.pyc
+.gitignore

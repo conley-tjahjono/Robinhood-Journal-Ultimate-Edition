@@ -3,6 +3,8 @@ import pandas as pd
 import robin_stocks.robinhood as r  # abbreviated version of robinhoood commands
 import csv
 import datetime as dt
+from IPython.display import display
+
 
 # symbol conversions for option orders
 def get_corporate_actions():
@@ -10,23 +12,23 @@ def get_corporate_actions():
     corporate_actions = r.helper.request_get(url, 'pagination')
     result = []
     for action in corporate_actions:
-        if action['type'] == 'symbol_conversion':
-            # action keys: dict_keys(['id', 'type', 'effective_date', 'state', 'chain', 'new_cash_component',
-            # 'old_cash_component', 'new_symbol', 'old_symbol', 'new_trade_value_multiplier',
-            # 'old_trade_value_multiplier', 'underlying_instruments', 'affected_positions', 'created_at', 'updated_at'])
-            # underlying_instruments keys: dict_keys(['id', 'instrument', 'symbol', 'new_quantity', 'old_quantity'])
-            for affected_position in action['affected_positions']:
-                result.append({
-                    'old_symbol': action['old_symbol'],
-                    'old_trade_value_multiplier': action['old_trade_value_multiplier'],
-                    'new_symbol': action['new_symbol'],
-                    'new_trade_value_multiplier': action['new_trade_value_multiplier'],
-                    'effective_date': action['effective_date'],
-                    'type': action['type'],
-                    'option_id': affected_position['option'],
-                    'new_strike_price': affected_position['new_strike_price'],
-                    'new_expiration_date': affected_position['new_expiration_date']
-                })
+        # if action['type'] == 'symbol_conversion':
+        # action keys: dict_keys(['id', 'type', 'effective_date', 'state', 'chain', 'new_cash_component',
+        # 'old_cash_component', 'new_symbol', 'old_symbol', 'new_trade_value_multiplier',
+        # 'old_trade_value_multiplier', 'underlying_instruments', 'affected_positions', 'created_at', 'updated_at'])
+        # underlying_instruments keys: dict_keys(['id', 'instrument', 'symbol', 'new_quantity', 'old_quantity'])
+        for affected_position in action['affected_positions']:
+            result.append({
+                'old_symbol': action['old_symbol'],
+                'old_trade_value_multiplier': action['old_trade_value_multiplier'],
+                'new_symbol': action['underlying_instruments'][1]['symbol'], #new_symbol wouldnt work for PTRA; not PTRAQ
+                'new_trade_value_multiplier': action['new_trade_value_multiplier'],
+                'effective_date': action['effective_date'],
+                'type': action['type'],
+                'option_id': affected_position['option'],
+                'new_strike_price': affected_position['new_strike_price'],
+                'new_expiration_date': affected_position['new_expiration_date']
+            })
     return result
 
 # symbol conversion for stock splits
@@ -43,7 +45,6 @@ def get_stock_splits():
             'divisor': split['split']['divisor'],
             'direction': split['split']['direction'],
         })
-    print(result)
     return result
 
 # converts csv to list of dictionaries

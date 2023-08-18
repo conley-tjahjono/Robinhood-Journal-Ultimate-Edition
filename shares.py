@@ -153,8 +153,42 @@ def completed_stock_trades_by_symbol(symbol):
         symbol, stock_orders)
     return simple_df, complex_df
 
-simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
+def completed_stock_trades():
+    stock_orders = completed_stock_orders_with_symbol_conversion_and_option_events()
+    # grab all the symbols ever traded for option orders
+    symbols_df = pd.DataFrame(stock_orders)[
+        'symbol'].drop_duplicates().reset_index()
+    # print(symbols_df)
+    df, display_column_names = create_stock_df()
+    for row in symbols_df['symbol']:
+        # print(row)
+        df_by_symbol_simple, df_by_symbol = completed_stock_trades_by_symbol_universal(
+            row, stock_orders)
+        df = df.append(df_by_symbol_simple)
 
-print('Overall Return:', simple_df['RETURN $'].sum())
+    complete_df = df.loc[df['CLOSE DATE'] != ''].sort_values(
+        by=['CLOSE DATE'], ascending=False).reset_index()
+    open_df = df.loc[df['CLOSE DATE'] == ''].sort_values(
+        by=['OPEN DATE'], ascending=False).reset_index()
+    df = pd.concat([complete_df, open_df])
+    return df[display_column_names], df
+
+# simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
+simple_df, complex_df = completed_stock_trades()
 
 display(simple_df.to_string())
+print('Overall Return:', simple_df['RETURN $'].sum())
+
+simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
+
+monthly_amounts = simple_df.groupby(
+    simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
+
+print(monthly_amounts)
+print('Overall Return:', simple_df['RETURN $'].sum())
+
+grouped_totals = simple_df.dropna(subset=['CLOSE DATE']).groupby('SYMBOL')['RETURN $'].sum()
+
+display(grouped_totals)
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(grouped_totals)
