@@ -176,19 +176,15 @@ def completed_stock_trades():
 # simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
 simple_df, complex_df = completed_stock_trades()
 
-display(simple_df.to_string())
-print('Overall Return:', simple_df['RETURN $'].sum())
-
 simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
 
 monthly_amounts = simple_df.groupby(
     simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
 
-print(monthly_amounts)
-print('Overall Return:', simple_df['RETURN $'].sum())
-
 grouped_totals = simple_df.dropna(subset=['CLOSE DATE']).groupby('SYMBOL')['RETURN $'].sum()
 
-display(grouped_totals)
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    display(simple_df.to_string())
+    print('Overall Return:', simple_df['RETURN $'].sum())
+    print(monthly_amounts)
     print(grouped_totals)
