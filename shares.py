@@ -3,16 +3,12 @@ import datetime as dt
 import pandas as pd
 from IPython.display import display
 import robin_stocks.robinhood as r
-
 from shared.myLogin import user_login as myLogin1
 from shared.myLoginAlt import user_login as myLogin2
 from shared.similiar_actions import *
 
-
-
 myLogin1()
 csvName = 'myStocks.csv'
-
 
 # create the general option data frame format
 def create_stock_df():
@@ -35,22 +31,24 @@ def create_stock_df():
 
     return pd.DataFrame(columns=column_names), display_column_names
 
+#obtain all stock orders including option events
 def completed_stock_orders_with_symbol_conversion_and_option_events():
     completed_stock_orders(csvName)
     df = pd.DataFrame(stock_orders_with_symbol_conversion(csvName) + list_option_events()
                       ).sort_values(by=['date'], ascending=False).reset_index(drop=True).to_dict('records')
     return df
 
+#utility function for specific symbol and stock orders
 def completed_stock_trades_by_symbol_universal(symbol, stock_orders):
     # dataframe layout
     df, display_column_names = create_stock_df()
     # convert the option_order (list of dict) into a dataframe
     df_stock_orders = pd.DataFrame(stock_orders)
     # close orders from newest date to oldest date (descending order by date)
-    close_orders = df_stock_orders.loc[(df_stock_orders['side'] == 'sell') & (
+    close_orders = df_stock_orders[(df_stock_orders['side'] == 'sell') & (
         df_stock_orders['symbol'] == symbol)].to_dict('records')
     # open orders from newest date to oldest date (descending order by date)
-    open_orders = df_stock_orders.loc[(df_stock_orders['side'] == 'buy') & (
+    open_orders = df_stock_orders[(df_stock_orders['side'] == 'buy') & (
         df_stock_orders['symbol'] == symbol)].to_dict('records')
     fractional_amount = 6  # Fractional shares can be as small as 1/1000000
     # matching the close orders to open orders
@@ -140,49 +138,56 @@ def completed_stock_trades_by_symbol_universal(symbol, stock_orders):
             'close_order': None,
         }
         df = df.append(new_row, ignore_index=True)
-    complete_df = df.loc[df['CLOSE DATE'] != ''].sort_values(
+    complete_df = df[df['CLOSE DATE'].notna()].sort_values(
         by=['CLOSE DATE'], ascending=False).reset_index()
-    open_df = df.loc[df['CLOSE DATE'] == ''].sort_values(
+    open_df = df[df['CLOSE DATE'].isna()].sort_values(
         by=['OPEN DATE'], ascending=False).reset_index()
     df = pd.concat([complete_df, open_df])
     return df[display_column_names], df
 
+#function to provide stock data for a specific symbol
 def completed_stock_trades_by_symbol(symbol):
     stock_orders = completed_stock_orders_with_symbol_conversion_and_option_events()
     simple_df, complex_df = completed_stock_trades_by_symbol_universal(
         symbol, stock_orders)
     return simple_df, complex_df
 
+#all stocks traded
 def completed_stock_trades():
     stock_orders = completed_stock_orders_with_symbol_conversion_and_option_events()
     # grab all the symbols ever traded for option orders
-    symbols_df = pd.DataFrame(stock_orders)[
+    df_symbol = pd.DataFrame(stock_orders)[
         'symbol'].drop_duplicates().reset_index()
     # print(symbols_df)
     df, display_column_names = create_stock_df()
-    for row in symbols_df['symbol']:
+    for row in df_symbol['symbol']:
         # print(row)
-        df_by_symbol_simple, df_by_symbol = completed_stock_trades_by_symbol_universal(
+        simple_df_symbol, complex_df_symbol = completed_stock_trades_by_symbol_universal(
             row, stock_orders)
-        df = df.append(df_by_symbol_simple)
-
-    complete_df = df.loc[df['CLOSE DATE'] != ''].sort_values(
+        df = df.append(complex_df_symbol)
+    #complete_df is all completed orders
+    complete_df = df[df['CLOSE DATE'].notna()].sort_values(
         by=['CLOSE DATE'], ascending=False).reset_index()
-    open_df = df.loc[df['CLOSE DATE'] == ''].sort_values(
+    #open_df is all open orders
+    open_df = df[df['CLOSE DATE'].isna()].sort_values(
         by=['OPEN DATE'], ascending=False).reset_index()
+    #data frame contains all completed orders then existing open orders that haven't been closed
     df = pd.concat([complete_df, open_df])
     return df[display_column_names], df
 
 # simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
 simple_df, complex_df = completed_stock_trades()
 
+#Converts the close dates to date times
 simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
-
+#Grouping the close dates by monthly return
 monthly_amounts = simple_df.groupby(
     simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
 
-grouped_totals = simple_df.dropna(subset=['CLOSE DATE']).groupby('SYMBOL')['RETURN $'].sum()
+#Grouping the total return for every stock traded based on completed trades
+grouped_totals = simple_df[simple_df['CLOSE DATE'].notna()].groupby('SYMBOL')['RETURN $'].sum()
 
+#Prints all the data
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     display(simple_df.to_string())
     print('Overall Return:', simple_df['RETURN $'].sum())
