@@ -6,6 +6,10 @@ import robin_stocks.robinhood as r
 from shared.myLogin import user_login as myLogin1
 from shared.myLoginAlt import user_login as myLogin2
 from shared.similiar_actions import *
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
 
 myLogin1()
 csvName = 'myStocks.csv'
@@ -175,21 +179,32 @@ def completed_stock_trades():
     df = pd.concat([complete_df, open_df])
     return df[display_column_names], df
 
-# simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
-simple_df, complex_df = completed_stock_trades()
+# # simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
+# simple_df, complex_df = completed_stock_trades()
 
-#Converts the close dates to date times
-simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
-#Grouping the close dates by monthly return
-monthly_amounts = simple_df.groupby(
-    simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
+# #Converts the close dates to date times
+# simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
+# #Grouping the close dates by monthly return
+# monthly_amounts = simple_df.groupby(
+#     simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
 
-#Grouping the total return for every stock traded based on completed trades
-grouped_totals = simple_df[simple_df['CLOSE DATE'].notna()].groupby('SYMBOL')['RETURN $'].sum()
+# #Grouping the total return for every stock traded based on completed trades
+# grouped_totals = simple_df[simple_df['CLOSE DATE'].notna()].groupby('SYMBOL')['RETURN $'].sum()
 
-#Prints all the data
-with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    display(simple_df.to_string())
-    print('Overall Return:', simple_df['RETURN $'].sum())
-    print(monthly_amounts)
-    print(grouped_totals)
+# #Prints all the data
+# with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+#     display(simple_df.to_string())
+#     print('Overall Return:', simple_df['RETURN $'].sum())
+#     print(monthly_amounts)
+#     print(grouped_totals)
+
+@app.route('/shares/completed_stock_trades', methods=['GET'])
+def get_completed_stock_trades():
+    simple_df, complex_df = completed_stock_trades()
+    data = {"message": "This is a GET request"}
+    return jsonify(simple_df.to_dict(orient='records'))
+    
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
