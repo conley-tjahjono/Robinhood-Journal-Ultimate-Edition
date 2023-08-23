@@ -206,7 +206,7 @@ def get_completed_stock_trades():
         if simple_df:
             return jsonify(simple_df.to_dict(orient='records'))
         else:
-            return jsonify({"message": "User not found"}), 404
+            return jsonify({"message": "Symbol not found"}), 404
     else:
         simple_df, complex_df = completed_stock_trades()
         return jsonify(simple_df.to_dict(orient='records'))
