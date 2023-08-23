@@ -200,11 +200,20 @@ def completed_stock_trades():
 
 @app.route('/shares/completed_stock_trades', methods=['GET'])
 def get_completed_stock_trades():
-    simple_df, complex_df = completed_stock_trades()
-    data = {"message": "This is a GET request"}
-    return jsonify(simple_df.to_dict(orient='records'))
-    
+    stock_ticker = request.args.get('symbol')  # Get the 'username' parameter from the query string
+    if(stock_ticker):
+        simple_df, complex_df = completed_stock_trades_by_symbol('stock_ticker')
+        if simple_df:
+            return jsonify(simple_df.to_dict(orient='records'))
+        else:
+            return jsonify({"message": "User not found"}), 404
+    else:
+        simple_df, complex_df = completed_stock_trades()
+        return jsonify(simple_df.to_dict(orient='records'))
 
 
+
+
+#For Flask so don't delete
 if __name__ == '__main__':
     app.run(debug=True)
