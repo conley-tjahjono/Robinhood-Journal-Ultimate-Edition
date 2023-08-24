@@ -222,7 +222,7 @@ def get_completed_stock_trades_by_month():
             #Grouping the close dates by monthly return
             monthly_amounts = simple_df.groupby(
             simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
-            return jsonify(monthly_amounts.to_dict(orient='records'))
+            return jsonify(monthly_amounts)
         else:
             return jsonify({"message": "Symbol not found"}), 404
     else:
@@ -232,7 +232,7 @@ def get_completed_stock_trades_by_month():
         #Grouping the close dates by monthly return
         monthly_amounts = simple_df.groupby(
         simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
-        return jsonify(monthly_amounts.to_dict(orient='records'))
+        return jsonify(monthly_amounts)
 
     
 
