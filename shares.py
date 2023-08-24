@@ -200,8 +200,8 @@ def completed_stock_trades():
 
 @app.route('/shares/completed_stock_trades', methods=['GET'])
 def get_completed_stock_trades():
-    stock_ticker = request.args.get('symbol')  # Get the 'username' parameter from the query string
-    if(stock_ticker):
+    stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
+    if stock_ticker:
         simple_df, complex_df = completed_stock_trades_by_symbol('stock_ticker')
         if simple_df:
             return jsonify(simple_df.to_dict(orient='records'))
@@ -211,6 +211,30 @@ def get_completed_stock_trades():
         simple_df, complex_df = completed_stock_trades()
         return jsonify(simple_df.to_dict(orient='records'))
 
+@app.route('/shares/completed_stock_trades/monthly', methods=['GET'])
+def get_completed_stock_trades_by_month():
+    stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
+    if stock_ticker:
+        simple_df, complex_df = completed_stock_trades_by_symbol('stock_ticker')
+        if simple_df:
+            #Converts the close dates to date times
+            simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
+            #Grouping the close dates by monthly return
+            monthly_amounts = simple_df.groupby(
+            simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
+            return jsonify(monthly_amounts.to_dict(orient='records'))
+        else:
+            return jsonify({"message": "Symbol not found"}), 404
+    else:
+        simple_df, complex_df = completed_stock_trades()
+         #Converts the close dates to date times
+        simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
+        #Grouping the close dates by monthly return
+        monthly_amounts = simple_df.groupby(
+        simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
+        return jsonify(monthly_amounts.to_dict(orient='records'))
+
+    
 
 
 
