@@ -180,7 +180,7 @@ def completed_stock_trades():
     return df[display_column_names], df
 
 # simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
-# simple_df, complex_df = completed_stock_trades()
+# # simple_df, complex_df = completed_stock_trades()
 
 # #Grouping the close dates by monthly return
 # monthly_amounts = simple_df.groupby(
@@ -192,16 +192,9 @@ def completed_stock_trades():
 # #Prints all the data
 # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
 #     # display(simple_df.to_string())
-#     # monthly_amounts_df = pd.DataFrame(monthly_amounts.reset_index(), columns=['Month', 'Total RETURN $'])
-#     # print(monthly_amounts.index.tolist())
-#     # print(monthly_amounts.values.tolist())
-#     monthly_amounts_df = pd.DataFrame(monthly_amounts.reset_index())
-#     print(type(monthly_amounts_df))
     
-#     # monthly_amounts_df.columns = ['Month', 'Total RETURN $']
-#     # print(monthly_amounts_df)
 #     # print('Overall Return:', simple_df['RETURN $'].sum())
-#     # print(monthly_amounts)
+#     print(monthly_amounts)
 #     # print(grouped_totals)
 
 @app.route('/shares/completed_stock_trades', methods=['GET'])
