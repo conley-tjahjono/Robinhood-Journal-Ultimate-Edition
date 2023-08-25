@@ -208,11 +208,8 @@ def completed_stock_trades():
 def get_completed_stock_trades():
     stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
     if stock_ticker:
-        simple_df, complex_df = completed_stock_trades_by_symbol('stock_ticker')
-        if simple_df:
-            return jsonify(simple_df.to_dict(orient='records'))
-        else:
-            return jsonify({"message": "Symbol not found"}), 404
+        simple_df, complex_df = completed_stock_trades_by_symbol(stock_ticker)
+        return jsonify(simple_df.to_dict(orient='records'))
     else:
         simple_df, complex_df = completed_stock_trades()
         return jsonify(simple_df.to_dict(orient='records'))
@@ -222,16 +219,13 @@ def get_completed_stock_trades_by_month():
     stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
     if stock_ticker:
         simple_df, complex_df = completed_stock_trades_by_symbol(stock_ticker)
-        if simple_df:
-            #Converts the close dates to date times
-            simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
-            #Grouping the close dates by monthly return
-            monthly_amounts = simple_df.groupby(
-            simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum().reset_index()
-            monthly_amounts['Month']= monthly_amounts['CLOSE DATE'].dt.to_timestamp().dt.strftime('%Y-%m')
-            return jsonify(monthly_amounts[['Month', 'RETURN $']].to_json(orient='records'))
-        else:
-            return jsonify({"message": "Symbol not found"}), 404
+        #Converts the close dates to date times
+        simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
+        #Grouping the close dates by monthly return
+        monthly_amounts = simple_df.groupby(
+        simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum().reset_index()
+        monthly_amounts['Month']= monthly_amounts['CLOSE DATE'].dt.to_timestamp().dt.strftime('%Y-%m')
+        return jsonify(monthly_amounts[['Month', 'RETURN $']].to_json(orient='records'))
     else:
         simple_df, complex_df = completed_stock_trades()
          #Converts the close dates to date times
