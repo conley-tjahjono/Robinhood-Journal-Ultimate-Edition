@@ -179,24 +179,30 @@ def completed_stock_trades():
     df = pd.concat([complete_df, open_df])
     return df[display_column_names], df
 
-# # simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
+# simple_df, complex_df = completed_stock_trades_by_symbol('NIO')
 # simple_df, complex_df = completed_stock_trades()
 
-# #Converts the close dates to date times
-# simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
 # #Grouping the close dates by monthly return
 # monthly_amounts = simple_df.groupby(
-#     simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
+#     (pd.to_datetime(simple_df['CLOSE DATE'])).dt.to_period('M'))['RETURN $'].sum()
 
 # #Grouping the total return for every stock traded based on completed trades
 # grouped_totals = simple_df[simple_df['CLOSE DATE'].notna()].groupby('SYMBOL')['RETURN $'].sum()
 
 # #Prints all the data
 # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-#     display(simple_df.to_string())
-#     print('Overall Return:', simple_df['RETURN $'].sum())
-#     print(monthly_amounts)
-#     print(grouped_totals)
+#     # display(simple_df.to_string())
+#     # monthly_amounts_df = pd.DataFrame(monthly_amounts.reset_index(), columns=['Month', 'Total RETURN $'])
+#     # print(monthly_amounts.index.tolist())
+#     # print(monthly_amounts.values.tolist())
+#     monthly_amounts_df = pd.DataFrame(monthly_amounts.reset_index())
+#     print(type(monthly_amounts_df))
+    
+#     # monthly_amounts_df.columns = ['Month', 'Total RETURN $']
+#     # print(monthly_amounts_df)
+#     # print('Overall Return:', simple_df['RETURN $'].sum())
+#     # print(monthly_amounts)
+#     # print(grouped_totals)
 
 @app.route('/shares/completed_stock_trades', methods=['GET'])
 def get_completed_stock_trades():
@@ -215,14 +221,15 @@ def get_completed_stock_trades():
 def get_completed_stock_trades_by_month():
     stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
     if stock_ticker:
-        simple_df, complex_df = completed_stock_trades_by_symbol('stock_ticker')
+        simple_df, complex_df = completed_stock_trades_by_symbol(stock_ticker)
         if simple_df:
             #Converts the close dates to date times
             simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
             #Grouping the close dates by monthly return
             monthly_amounts = simple_df.groupby(
-            simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
-            return jsonify(monthly_amounts)
+            simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum().reset_index()
+            monthly_amounts['Month']= monthly_amounts['CLOSE DATE'].dt.to_timestamp().dt.strftime('%Y-%m')
+            return jsonify(monthly_amounts[['Month', 'RETURN $']].to_json(orient='records'))
         else:
             return jsonify({"message": "Symbol not found"}), 404
     else:
@@ -231,11 +238,9 @@ def get_completed_stock_trades_by_month():
         simple_df['CLOSE DATE'] = pd.to_datetime(simple_df['CLOSE DATE'])
         #Grouping the close dates by monthly return
         monthly_amounts = simple_df.groupby(
-        simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum()
-        return jsonify(monthly_amounts)
-
-    
-
+        simple_df['CLOSE DATE'].dt.to_period('M'))['RETURN $'].sum().reset_index()
+        monthly_amounts['Month']= monthly_amounts['CLOSE DATE'].dt.to_timestamp().dt.strftime('%Y-%m')
+        return jsonify(monthly_amounts[['Month', 'RETURN $']].to_json(orient='records'))
 
 
 #For Flask so don't delete
