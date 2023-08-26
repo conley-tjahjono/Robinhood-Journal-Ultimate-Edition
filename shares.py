@@ -14,25 +14,26 @@ app = Flask(__name__)
 myLogin1()
 csvName = 'myStocks.csv'
 
+DEFAULT_COLUMNS = [
+    'STATUS',
+    'OPEN DATE',
+    'CLOSE DATE',
+    'SYMBOL',
+    'SIZE',
+    'ENTRY PRICE',
+    'EXIT PRICE',
+    'RETURN %',
+    'RETURN $',
+    'HOLD TIME',
+    'open_order',
+    'close_order'
+]
+
+
 # create the general option data frame format
 def create_stock_df():
-    column_names = [
-        'STATUS',
-        'OPEN DATE',
-        'CLOSE DATE',
-        'SYMBOL',
-        'SIZE',
-        'ENTRY PRICE',
-        'EXIT PRICE',
-        'RETURN %',
-        'RETURN $',
-        'HOLD TIME',
-        'open_order',
-        'close_order'
-    ]
-
+    column_names = DEFAULT_COLUMNS.copy()
     display_column_names = column_names[0:len(column_names)-2]
-
     return pd.DataFrame(columns=column_names), display_column_names
 
 #obtain all stock orders including option events

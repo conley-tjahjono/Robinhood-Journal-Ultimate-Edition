@@ -18,10 +18,12 @@ def get_corporate_actions():
         # 'old_trade_value_multiplier', 'underlying_instruments', 'affected_positions', 'created_at', 'updated_at'])
         # underlying_instruments keys: dict_keys(['id', 'instrument', 'symbol', 'new_quantity', 'old_quantity'])
         for affected_position in action['affected_positions']:
+            underlying_instruments = action['underlying_instruments']
+            new_symbol = underlying_instruments[1]['symbol']
             result.append({
                 'old_symbol': action['old_symbol'],
                 'old_trade_value_multiplier': action['old_trade_value_multiplier'],
-                'new_symbol': action['underlying_instruments'][1]['symbol'], #new_symbol wouldnt work for PTRA; not PTRAQ
+                'new_symbol': new_symbol,
                 'new_trade_value_multiplier': action['new_trade_value_multiplier'],
                 'effective_date': action['effective_date'],
                 'type': action['type'],
@@ -37,13 +39,16 @@ def get_stock_splits():
     stock_splits = r.helper.request_get(url, 'pagination')
     result = []
     for split in stock_splits:
+        split_data = split['split']
+        old_symbol = r.stocks.get_stock_quote_by_id(split_data['old_instrument_id'])['symbol']
+        new_symbol = r.stocks.get_stock_quote_by_id(split_data['new_instrument_id'])['symbol']
         result.append({
-            'old_symbol': r.stocks.get_stock_quote_by_id(split['split']['old_instrument_id'])['symbol'],
-            'new_symbol': r.stocks.get_stock_quote_by_id(split['split']['new_instrument_id'])['symbol'],
-            'effective_date': split['split']['effective_date'],
-            'multiplier': split['split']['multiplier'],
-            'divisor': split['split']['divisor'],
-            'direction': split['split']['direction'],
+            'old_symbol': old_symbol,
+            'new_symbol': new_symbol,
+            'effective_date': split_data['effective_date'],
+            'multiplier': split_data['multiplier'],
+            'divisor': split_data['divisor'],
+            'direction': split_data['direction'],
         })
     return result
 
@@ -95,24 +100,19 @@ def stock_orders_with_symbol_conversion(filename):
     df = pd.DataFrame(option_orders)
 
     corporate_actions_df = pd.DataFrame(get_corporate_actions())
-    corpactions_df_simple = corporate_actions_df.drop_duplicates(subset=['old_symbol']).reset_index(
+    unique_actions = corporate_actions_df.drop_duplicates(subset=['old_symbol']).reset_index(
         drop=True).drop(columns=['option_id', 'new_strike_price', 'new_expiration_date'])
 
-    corpactions_df_simple_same_value = corpactions_df_simple.loc[corpactions_df_simple[
-        'old_trade_value_multiplier'] == corpactions_df_simple['new_trade_value_multiplier']]
+    same_value_actions = unique_actions[unique_actions['old_trade_value_multiplier'] == unique_actions['new_trade_value_multiplier']]
 
-    df['symbol'] = df['symbol'].replace(corpactions_df_simple_same_value['old_symbol'].to_list(
-    ), corpactions_df_simple_same_value['new_symbol'].to_list())
+    df['symbol'] = df['symbol'].replace(same_value_actions['old_symbol'].to_list(
+    ), same_value_actions['new_symbol'].to_list())
     return df.to_dict('records')
 
 # how long a position has been held for
-def holding_amount_by_days(openDate, closeDate):
-    open_y, open_m, open_d = [int(x) for x in openDate.split('-')]
-    open_date = dt.date(open_y, open_m, open_d)
-
-    close_y, close_m, close_d = [int(y) for y in closeDate.split('-')]
-    close_date = dt.date(close_y, close_m, close_d)
-
+def holding_amount_by_days(open_date, close_date):
+    open_date = dt.datetime.strptime(open_date, '%Y-%m-%d').date()
+    close_date = dt.datetime.strptime(close_date, '%Y-%m-%d').date()
     return (close_date - open_date).days
 
 # Completing Stock Orders
