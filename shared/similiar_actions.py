@@ -193,12 +193,9 @@ def list_option_events():
     # for the key: type, there are two types: expiration or assignment
     # for equity_components: dict_keys(['id', 'instrument', 'price', 'quantity', 'side', 'symbol'])
 
-    df_option_events = pd.DataFrame(option_events_request)
-    df_option_events = df_option_events.loc[df_option_events['type'].isin(
-        ['assignment', 'exercise'])]
-    option_events_request = df_option_events.to_dict('records')
-
     option_events = []
+    round_num = 6
+
     for option_event in option_events_request:
         # equity_components
         #   instrument
@@ -209,23 +206,23 @@ def list_option_events():
         # event_date
         # total_cash_amount
         # fee is price * quantity - total cash amount
-        event_date = option_event.get('event_date')
-        total_cash_amount = option_event.get('total_cash_amount')
-        equity_components = option_event.get('equity_components')
-        round_num = 6
-        for component in equity_components:
-            event = {
-                'symbol': component.get('symbol'),
-                'instrument': component.get('instrument'),
-                'instrument_id': component.get('instrument').replace('https://api.robinhood.com/instruments/', '').replace('/', ''),
-                'date': event_date,
-                'time': '16:00:00.000000Z',
-                'order_type': 'option event',
-                'side': component.get('side'),
-                'fees': str(round(float(component.get('price')) * float(component.get('quantity')) - float(total_cash_amount), round_num)),
-                'quantity': component.get('quantity'),
-                'average_price': component.get('price'),
-                'total_price': total_cash_amount,
-            }
-            option_events.append(event)
+       if option_event['type'] in ['assignment', 'exercise']:
+            event_date = option_event['event_date']
+            total_cash_amount = option_event['total_cash_amount']
+            
+            for component in option_event['equity_components']:
+                event = {
+                    'symbol': component['symbol'],
+                    'instrument': component['instrument'],
+                    'instrument_id': component['instrument'].split('/')[-2],
+                    'date': event_date,
+                    'time': '16:00:00.000000Z',
+                    'order_type': 'option event',
+                    'side': component['side'],
+                    'fees': str(round(float(component['price']) * float(component['quantity']) - float(total_cash_amount), round_num)),
+                    'quantity': component['quantity'],
+                    'average_price': component['price'],
+                    'total_price': total_cash_amount,
+                }
+                option_events.append(event)
     return option_events
