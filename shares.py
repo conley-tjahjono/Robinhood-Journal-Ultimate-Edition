@@ -229,6 +229,18 @@ def get_completed_stock_trades_by_month():
         monthly_amounts['Month']= monthly_amounts['CLOSE DATE'].dt.to_timestamp().dt.strftime('%Y-%m')
         return jsonify(monthly_amounts[['Month', 'RETURN $']].to_json(orient='records'))
 
+@app.route('/shares/completed_stock_trades/total', methods=['GET'])
+def get_completed_stock_trades_total():
+    stock_ticker = request.args.get('symbol')  # Get the 'stock ticker' parameter from the query string
+    if stock_ticker:
+        simple_df, complex_df = completed_stock_trades_by_symbol(stock_ticker)
+        #Converts the close dates to date times
+        return jsonify(simple_df['RETURN $'].sum())
+    else:
+        simple_df, complex_df = completed_stock_trades()
+         #Converts the close dates to date times
+        return jsonify(simple_df['RETURN $'].sum())
+
 
 #For Flask so don't delete
 if __name__ == '__main__':
