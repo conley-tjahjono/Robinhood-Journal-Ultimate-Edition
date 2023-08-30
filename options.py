@@ -222,7 +222,7 @@ def completed_option_trades_by_symbol_universal(symbol, option_orders):
         status = 'LOSS' if returnAmount < 0 else 'WIN'
 
         # how long the option contract was being held where date is held in year-month-date like 2-8-2022
-        date_difference = similiar_actions.holding_amount_by_days(
+        date_difference = holding_amount_by_days(
             open_order['order_created_at'], close_order['order_created_at'])
 
         new_row = {
